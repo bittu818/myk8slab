@@ -1,0 +1,43 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: py-deploy-16
+  namespace: ns16
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: python-app-16
+  template:
+    metadata:
+      labels:
+        app: python-app-16
+    spec:
+      containers:
+        - name: python-container
+          image: vishwacloudlab/pythonapp:v4-var
+          volumeMounts:
+            - mountPath: "/code"
+              name: storage-16
+          ports:
+            - containerPort: 8000
+          env:
+            - name: REDIS_HOST
+              value: "redis-service-16"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+      volumes:
+        - name: storage-16
+          persistentVolumeClaim:
+            claimName: pvc-16
