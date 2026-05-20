@@ -1,5 +1,5 @@
 pipeline {
-  agent {label 'ns17-kube'}  ##chnage
+  agent {label 'sri-27-kube'}  ##chnage
 
   stages {
 
