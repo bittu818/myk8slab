@@ -6,8 +6,8 @@ pipeline {
     stage('Checkout') {
       steps {
         git branch: 'main',
-                    credentialsId: 'ns17-github-cred',  ##chnage
-                    url: 'git@github.com:pgaws/k8slab.git'           ## ur git repo          
+                    credentialsId: 'sri-27-github-cred',  ##chnage
+                    url: 'git@github.com:bittu818/myk8slab.git'           ## ur git repo          
       }
     }
     stage('Check on Kubernetes') {
