@@ -1,13 +1,13 @@
 pipeline {
-  agent {label 'ns17-kube'}
+  agent {label 'ns17-kube'}  ##chnage
 
   stages {
 
     stage('Checkout') {
       steps {
         git branch: 'main',
-                    credentialsId: 'ns17-github-cred',
-                    url: 'git@github.com:pgaws/k8slab.git'                    
+                    credentialsId: 'ns17-github-cred',  ##chnage
+                    url: 'git@github.com:pgaws/k8slab.git'           ## ur git repo          
       }
     }
     stage('Check on Kubernetes') {
