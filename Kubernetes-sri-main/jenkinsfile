@@ -7,14 +7,14 @@ pipeline {
 
         CHART_PATH = "./Kubernetes-sri-main/helm-py-redis"
 
+        DOCKER_BUILD_PATH = "./Kubernetes-sri-main/helm-py-redis"
+
         NAMESPACE = "sri-27"
 
         KUBECONFIG = "/home/labuser/k8s-3-node.conf"
 
         IMAGE_NAME = "bittu818/python-app"
         IMAGE_TAG = "v1"
-
-        DOCKER_BUILD_PATH = "./Kubernetes-sri-main/helm-py-redis"
     }
 
     stages {
@@ -27,22 +27,21 @@ pipeline {
             }
         }
 
-        stage('Check Workspace') {
+        stage('Workspace Check') {
             steps {
                 sh '''
                 pwd
-                ls -lrt
+                ls -R
                 find . -name Chart.yaml
                 find . -name Dockerfile
                 '''
             }
         }
 
-        stage('Verify Cluster Access') {
+        stage('Cluster Access') {
             steps {
                 sh '''
                 export KUBECONFIG=${KUBECONFIG}
-
                 kubectl get nodes
                 kubectl get ns
                 '''
@@ -53,7 +52,6 @@ pipeline {
             steps {
                 sh '''
                 export KUBECONFIG=${KUBECONFIG}
-
                 helm lint ${CHART_PATH}
                 '''
             }
@@ -66,7 +64,6 @@ pipeline {
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
-
                     sh '''
                     echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                     '''
@@ -90,7 +87,7 @@ pipeline {
             }
         }
 
-        stage('Deploy Application') {
+        stage('Deploy with Helm') {
             steps {
                 sh '''
                 export KUBECONFIG=${KUBECONFIG}
@@ -115,13 +112,11 @@ pipeline {
     }
 
     post {
-
         success {
-            echo 'Application deployed successfully!'
+            echo "Deployment successful on namespace sri-27"
         }
-
         failure {
-            echo 'Pipeline failed!'
+            echo "Pipeline failed — check logs"
         }
     }
 }
