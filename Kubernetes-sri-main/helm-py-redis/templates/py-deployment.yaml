@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-app
+spec:
+  replicas: {{ .Values.pythonapp.replicas }}
+  selector:
+    matchLabels:
+      app: python-app
+
+  template:
+    metadata:
+      labels:
+        app: python-app
+
+    spec:
+      containers:
+        - name: python-app
+          image: {{ .Values.pythonapp.image }}
+
+          command:
+            - sh
+            - -c
+
+          args:
+            - |
+              pip install flask redis && python -c "
+              from flask import Flask
+              import redis
+              import os
+
+              app = Flask(__name__)
+
+              redis_host = os.environ.get('REDIS_HOST', 'redis-service')
+              r = redis.Redis(host=redis_host, port=6379)
+
+              @app.route('/')
+              def home():
+                  r.incr('counter')
+                  return f'Redis Counter: {r.get(\"counter\").decode()}'
+
+              app.run(host='0.0.0.0', port=5000)
+              "
+
+          ports:
+            - containerPort: {{ .Values.pythonapp.port }}
+
+          envFrom:
+            - configMapRef:
+                name: python-config

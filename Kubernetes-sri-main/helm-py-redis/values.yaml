@@ -1,0 +1,9 @@
+redis:
+  image: redis:7.2
+  replicas: 2
+  port: 6379
+
+pythonapp:
+  image: python:3.11
+  replicas: 2
+  port: 5000
