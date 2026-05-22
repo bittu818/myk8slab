@@ -1,35 +1,124 @@
 pipeline {
-  agent {label 'sri-27-kube'}  ##chnage
+    agent any
 
-  stages {
+    environment {
 
-    stage('Checkout') {
-      steps {
-        git branch: 'main',
-                    credentialsId: 'sri-27-github-cred',  ##chnage
-                    url: 'git@github.com:bittu818/myk8slab.git'           ## ur git repo          
-      }
-    }
-    stage('Check on Kubernetes') {
-      steps {
-        sh '''
-          export KUBECONFIG=$HOME/k8s-3-node.conf
-          kubectl get pods
-          kubectl get svc
-          kubectl get deployments
-        '''
-      }
-    }
-    stage('Deployment on Kubernetes') {
-      steps {
-        sh '''
-          export KUBECONFIG=$HOME/k8s-3-node.conf
-          kubectl apply -f .
-        '''
-      }
-    }
+        RELEASE_NAME = "python-app"
 
- 
+        CHART_PATH = "./Kubernetes-sri-main/helm-py-redis"
 
-  }
+        NAMESPACE = "sri-27"
+
+        KUBECONFIG = "/home/labuser/k8s-3-node.conf"
+
+        IMAGE_NAME = "bittu818/python-app"
+        IMAGE_TAG = "v1"
+    }
+
+    stages {
+
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main',
+                credentialsId: 'sri-27-github-cred',
+                url: 'git@github.com:bittu818/myk8slab.git'
+            }
+        }
+
+        stage('Check Workspace') {
+            steps {
+                sh '''
+                pwd
+                ls -lrt
+                find . -name Chart.yaml
+                '''
+            }
+        }
+
+        stage('Verify Cluster Access') {
+            steps {
+                sh '''
+                export KUBECONFIG=${KUBECONFIG}
+
+                kubectl get nodes
+                kubectl get ns
+                '''
+            }
+        }
+
+        stage('Helm Lint') {
+            steps {
+                sh '''
+                export KUBECONFIG=${KUBECONFIG}
+
+                helm lint ${CHART_PATH}
+                '''
+            }
+        }
+
+        stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'sri-27-doc-cred',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+
+                    sh '''
+                    docker login -u $DOCKER_USER -p $DOCKER_PASS
+                    '''
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                '''
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                sh '''
+                docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                '''
+            }
+        }
+
+        stage('Deploy Application') {
+            steps {
+                sh '''
+                export KUBECONFIG=${KUBECONFIG}
+
+                helm upgrade --install ${RELEASE_NAME} ${CHART_PATH} \
+                --namespace ${NAMESPACE}
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                export KUBECONFIG=${KUBECONFIG}
+
+                kubectl get pods -n ${NAMESPACE}
+                kubectl get svc -n ${NAMESPACE}
+                helm list -n ${NAMESPACE}
+                '''
+            }
+        }
+    }
+
+    post {
+
+        success {
+            echo 'Application deployed successfully!'
+        }
+
+        failure {
+            echo 'Pipeline failed!'
+        }
+    }
 }
